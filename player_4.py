@@ -105,7 +105,10 @@ def epsilon_greedy(Q,
         # Implemenmt the epsilon-greedy algorithm for a constant epsilon value
         # Use epsilon and all input arguments of epsilon_greedy you see fit
         # It is recommended you use the np.random module
-        action = None
+        if epsilon > np.random.uniform(0,1):
+            action = np.random.choice(all_actions)
+        else:
+             action = all_actions[np.argmax(Q[state,all_actions])]
         # ADD YOUR CODE SNIPPET BETWEEN EX 4.1
 
     elif eps_type == 'linear':
@@ -114,7 +117,12 @@ def epsilon_greedy(Q,
         # Use epsilon and all input arguments of epsilon_greedy you see fit
         # use the ScheduleLinear class
         # It is recommended you use the np.random module
-        action = None
+        linear_schedule = ScheduleLinear(anneal_timesteps, epsilon_final, epsilon_initial)
+        epsilon = linear_schedule.value(current_total_steps)
+        if epsilon > np.random.uniform(0,1):
+            action = np.random.choice(all_actions)
+        else:
+            action = all_actions[np.argmax(Q[state,all_actions])]
         # ADD YOUR CODE SNIPPET BETWEENEX  4.2
 
     else:
@@ -172,7 +180,7 @@ class PlayerControllerRL(PlayerController, FishesModelling):
 
         Q_old = Q.copy()
 
-        diff = float('inf')
+        diff = float("inf")
         end_episode = False
 
         init_pos_tuple = self.settings.init_pos_diver
@@ -200,16 +208,11 @@ class PlayerControllerRL(PlayerController, FishesModelling):
                 # Chose an action from all possible actions
                 # ADD YOUR CODE SNIPPET BETWEEN EX 2.1 and 2.2
                 # action = np.random.choice(list_pos)
-                action = list_pos[np.argmax(Q[s_current,list_pos])]
-                # eprint(Q[s_current,:])
-                # eprint(list_pos)
-                # eprint(Q[s_current,list_pos])
-                # eprint(np.argmax(Q[s_current,list_pos]))
-                # eprint(action)
-                # eprint()
+                # action = list_pos[np.argmax(Q[s_current,list_pos])]
 
                 # ADD YOUR CODE SNIPPET BETWEEN EX 5
                 # Use the epsilon greedy algorithm to retrieve an action
+                action = epsilon_greedy(Q, s_current, list_pos, current_total_steps, eps_type="linear")
                 # ADD YOUR CODE SNIPPET BETWEEN EX 5
 
                 # compute reward
@@ -229,6 +232,7 @@ class PlayerControllerRL(PlayerController, FishesModelling):
                 # Implement the Bellman Update equation to update Q
                 # ADD YOUR CODE SNIPPET BETWEEN EX. 2.2
                 Q[s_current,action] = Q[s_current, action] + lr * (R + discount * np.nanmax(Q[s_next,:]) - Q[s_current,action])
+
                 s_current = s_next
                 current_total_steps += 1
                 steps += 1
@@ -361,5 +365,7 @@ class ScheduleLinear(object):
     def value(self, t):
         # ADD YOUR CODE SNIPPET BETWEEN EX 4.2
         # Return the annealed linear value
-        return self.initial_p
+        delta_epsilon = self.final_p - self.initial_p
+        epsilon_t = self.initial_p + delta_epsilon * (t / self.schedule_timesteps)
+        return epsilon_t
         # ADD YOUR CODE SNIPPET BETWEEN EX 4.2
